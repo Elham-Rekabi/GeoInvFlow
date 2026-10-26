@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import matplotlib.pyplot as plt
 from torchdiffeq import odeint
-from SPDE.finite_differences import First_order_derivative,  Second_order_derivative
+from Solvers.finite_differences import First_order_derivative,  Second_order_derivative
 
 class FokkerPlanck1D(nn.Module):
     def __init__(self, drift, diffusion, range_x =(-10, 10), num_points=1000, T = 10.0, dt=0.01, mean_0=0.0, std_0=1.0):

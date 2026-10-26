@@ -3,7 +3,7 @@ import torch.nn as nn
 import numpy as np
 import matplotlib.pyplot as plt
 from torchdiffeq import odeint
-from SPDE.finite_differences import hessian, gradient
+from Solvers.finite_differences import hessian, gradient
 
 class FokkerPlanckND(nn.Module):
 
