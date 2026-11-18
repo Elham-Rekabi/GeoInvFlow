@@ -7,6 +7,9 @@
       "TORCH_VARIANT": "cu128"
     }
   },
+  "features": {
+    "ghcr.io/devcontainers/features/git:1": {}
+  },
   "workspaceMount": "source=${localWorkspaceFolder},target=/workspace,type=bind",
   "workspaceFolder": "/workspace",
   "remoteUser": "researcher",
