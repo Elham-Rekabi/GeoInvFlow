@@ -1,11 +1,10 @@
 import torch
 import torch.nn as nn
-import matplotlib.pyplot as plt
 from torchdiffeq import odeint
-from Solvers.finite_differences import First_order_derivative,  Second_order_derivative
+from .finite_differences import First_order_derivative,  Second_order_derivative
 
 class FokkerPlanck1D(nn.Module):
-    def __init__(self, drift, diffusion, range_x =(-10, 10), num_points=1000, T = 10.0, dt=0.01, mean_0=0.0, std_0=1.0):
+    def __init__(self, drift, diffusion, range_x =(-10, 10), num_points=1000, T = 10.0, dt=0.01, mean_0=0.0, std_0=1.0, device=None, dtype=torch.float32):
         super(FokkerPlanck1D, self).__init__()
         self.drift_fun = drift["function"]
         self.drift_params = drift["params"]
@@ -19,7 +18,7 @@ class FokkerPlanck1D(nn.Module):
         self.std_0 = std_0
 
         # spatial grid
-        x = torch.linspace(range_x[0], range_x[1], num_points)
+        x = torch.linspace(range_x[0], range_x[1], num_points, device=device, dtype=dtype)
         dx = x[1] - x[0]
 
         self.register_buffer("x", x)
@@ -31,7 +30,7 @@ class FokkerPlanck1D(nn.Module):
         x = self.x
         device = x.device
 
-        t = torch.arange(0, self.T + self.dt, self.dt, device=device)
+        t = torch.arange(0, self.T + self.dt, self.dt, device=device, dtype=x.dtype)
       
 
         p0 = self.Gaussian_Initialization(self.x, mean=self.mean_0, std=self.std_0)

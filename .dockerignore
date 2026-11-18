@@ -1,0 +1,15 @@
+.git
+.vscode
+.agents
+.codex
+.aws
+.env
+.env.*
+**/__pycache__
+**/*.py[cod]
+**/.ipynb_checkpoints
+.venv
+venv
+env
+*.tar
+*.tar.gz

@@ -1,9 +1,8 @@
 import torch
 import torch.nn as nn
 import numpy as np
-import matplotlib.pyplot as plt
 from torchdiffeq import odeint
-from Solvers.finite_differences import hessian, gradient
+from .finite_differences import hessian, gradient
 
 class FokkerPlanckND(nn.Module):
 
@@ -27,18 +26,25 @@ class FokkerPlanckND(nn.Module):
         if dtype is None:
             dtype = torch.float32
 
-        self.device = device
-        self.dtype = dtype
 
 
         if mean_0 is None:
             mean_0 = [(0.5*(rng[1]+rng[0])) for rng in range_x]
         if cov_0 is None:
-            cov_0 = torch.eye(dim, device=self.device, dtype=self.dtype)
+            cov_0 = torch.eye(dim, device=device, dtype=dtype)
         
-        self.mean_0 = torch.as_tensor(mean_0, device=self.device, dtype=self.dtype)
-        self.cov_0 = torch.as_tensor(cov_0, device=self.device, dtype=self.dtype)
+        self.register_buffer("mean_0", torch.as_tensor(mean_0, device=device, dtype=dtype))
+        self.register_buffer("cov_0", torch.as_tensor(cov_0, device=device, dtype=dtype))
+        self.register_buffer("x", None)
 
+
+    @property
+    def device(self):
+        return self.mean_0.device
+
+    @property
+    def dtype(self):
+        return self.mean_0.dtype
 
     def solve(self, store_every_n_steps = 100, method = 'dopri5'):
 
@@ -173,7 +179,7 @@ class FokkerPlanckND(nn.Module):
             for j in range(dim):
                 J[..., i] -= gradient(Dp[..., i, j], spacing)[..., j]
 
-        J.to(self.device, self.dtype)
+        J = J.to(self.device, self.dtype)
 
         return J
     

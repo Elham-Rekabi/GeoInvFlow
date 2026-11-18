@@ -1,8 +1,6 @@
 import torch
 import torch.nn as nn
 import numpy as np
-import matplotlib.pyplot as plt
-from torchdiffeq import odeint
 
 
 # 1D: 
@@ -34,7 +32,7 @@ def gradient(u, spacing):
 
     dim = len(spacing)
 
-    grad = torch.zeros((*u.shape, dim), device=u.device)
+    grad = torch.zeros((*u.shape, dim), device=u.device, dtype=u.dtype)
 
     for idx, dxi in enumerate(spacing):
 
