@@ -82,14 +82,12 @@ class FC_layer(nn.Module):
             x = FCLayer(x)
             x = activation(x)
 
-            if self.isBatch_Norm == True:
-                BatchNormLayer = self.BatchNormLayers[i]
-                B, C = x.size()
-                if B > 1:
-                    x = x.view(-1, C)
-                    x = BatchNormLayer(x) ####
-                    #x = (x-x.mean(dim =0))/(x.std(dim =0)+1e-5)
-                    x = x.view(B, C)
+            if self.isBatch_Norm:
+                batch_norm = self.BatchNormLayers[i]
+                flattened = x.reshape(-1, x.shape[-1])
+                # BatchNorm needs multiple rows to estimate training statistics.
+                if flattened.shape[0] > 1 or not batch_norm.training:
+                    x = batch_norm(flattened).reshape(x.shape)
 
         return x
 

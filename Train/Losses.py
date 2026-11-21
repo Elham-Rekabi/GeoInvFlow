@@ -2,19 +2,14 @@ import torch
 
 
 def negative_log_likelihood(z, jacobian):
-    
-    """
-    z has shape (B, C) or (B, N, C).
-    jacobian is the total forward log-absolute-determinant of the entire
-    invertible network, summed across all coupling blocks, shape (batch_size,).
-    It is not the Jacobian matrix itself.
-    N is the node count for 3D z; otherwise N = 1.
-    
-    """
-    N = z.shape[1] if z.dim() == 3 else 1
-    loss_ml = torch.mean(z**2) / 2 - torch.mean(jacobian) / N
+    """Return Gaussian NLL per node, omitting the additive Gaussian constant.
 
-    return loss_ml
+    z has shape (B, C) or (B, N, C). jacobian has shape (B,) and contains
+    each sample's total forward log-absolute-determinant.
+    """
+    node_count = z.shape[1] if z.dim() == 3 else 1
+    latent_energy = 0.5 * z.square().flatten(start_dim=1).sum(dim=1)
+    return (latent_energy - jacobian).mean() / node_count
 
 
 def reconstruction_loss(observed_outputs, predicted_outputs):
@@ -30,4 +25,14 @@ def reconstruction_loss(observed_outputs, predicted_outputs):
     return mse_loss
 
 
+def hybrid_flow_loss(nll, reconstruction, *, epsilon, weight_bounds):
+    """Return the combined loss and the detached reconstruction weight."""
+    min_weight, max_weight = weight_bounds
+    if epsilon <= 0 or not 0 < min_weight <= max_weight:
+        raise ValueError("Expected positive epsilon and ordered positive weight bounds.")
 
+    nll_magnitude = nll.detach().abs().clamp_min(epsilon)
+    reconstruction_magnitude = reconstruction.detach().clamp_min(epsilon)
+    weight = (nll_magnitude / reconstruction_magnitude).clamp(min_weight, max_weight)
+
+    return nll + weight * reconstruction, weight

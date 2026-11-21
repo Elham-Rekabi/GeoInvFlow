@@ -56,6 +56,7 @@ class Conditional_Invertible_Network(nn.Module):
                                  "(batch_size, condition_features).")
 
         indices = range(self.NBlocks - 1, -1, -1) if isInverse else range(self.NBlocks)
+
         outputs = []
         block_logdets = []
         for i in indices:
@@ -63,4 +64,6 @@ class Conditional_Invertible_Network(nn.Module):
             outputs.append(x)
             block_logdets.append(logdet.unsqueeze(1))
         total_logdet = torch.cat(block_logdets, dim=-1).sum(dim=-1)
+
+        
         return x, total_logdet, outputs, block_logdets
