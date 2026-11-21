@@ -1,2 +1,2 @@
 # GeoInvFlow
-Geometry-aware normalizing flows for structurally non-identifiable inverse problems
+Geometry and physics-aware normalizing flows for structurally non-identifiable inverse problems
