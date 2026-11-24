@@ -3,6 +3,8 @@
 from dataclasses import dataclass, field
 from typing import Literal
 
+import torch
+
 
 @dataclass(frozen=True)
 class TrainingConfig:
@@ -43,21 +45,26 @@ class QuadraticConfig:
 
     seed: int = 42
     device: Literal["auto", "cpu", "cuda"] = "auto"
-    dtype: Literal["float32", "float64"] = "float32"
+    dtype: torch.dtype = torch.float32
 
     # Per-sample shapes, excluding the batch dimension.
     input_shape: tuple[int, ...] = (2,)
     output_shape: tuple[int, ...] = (1,)
 
 
+    # Latin hypercube sampling bounds as (lower, upper) pairs for x1 and x2.
+    input_bounds: tuple[tuple[float, float], tuple[float, float]] = ((-1.0, 3.0), (0.0, 4.0))
+
     # Samples for forward and inverse model
-    train_samples: int = 512
-    validation_samples: int = 128
+    train_samples: int = 256
+    validation_samples: int = 64
+
+    inverse_plot_observation: float = 1.0
 
     # Forward MLP with one activation per hidden layer and a linear output.
     forward_model_hidden_layers: tuple[int, ...] = (10, 20, 10)
     forward_model_activations: tuple[Literal["LeakyReLU", "ReLU", "Tanh", "Sigmoid", "Identity"],
-                                      ...] = ("Tanh", "Tanh", "LeakyReLU")
+                                      ...] = ("Tanh", "Tanh", "LeakyReLU", "Identity")
 
     # Conditional flow architecture.
     cnf_num_blocks: int = 4
@@ -67,6 +74,6 @@ class QuadraticConfig:
 
     # Adam settings for the two training stages.
     forward_training: TrainingConfig = field(default_factory=TrainingConfig)
-    inverse_training: TrainingConfig = field(default_factory=TrainingConfig)
+    inverse_training: TrainingConfig = field(default_factory=lambda: TrainingConfig(epochs=2000))
 
     

@@ -5,7 +5,9 @@ import Train.Losses as losses
 from torch.utils.data import DataLoader
 
 
-def train_forward_model(model, train_dataset, validation_dataset, settings):
+def train_forward_model(
+    model, train_dataset, validation_dataset, settings, *, on_epoch_end=None, on_iteration_end=None
+):
     """Fit a model on (input, target) pairs using mean squared error.
 
     The caller places the model on the desired device and dtype. 
@@ -58,17 +60,20 @@ def train_forward_model(model, train_dataset, validation_dataset, settings):
     # Training
 
     history = {"train_mse": [], "validation_mse": [], "learning_rate": []}
-    for _ in range(settings.epochs):
+    for epoch in range(settings.epochs):
         model.train()
         train_error = torch.zeros((), device=device, dtype=dtype)
         train_count = 0
-        for inputs, targets in train_loader:
+        for batch, (inputs, targets) in enumerate(train_loader, start=1):
             optimizer.zero_grad(set_to_none=True)
             loss, count = batch_mse(inputs, targets)
             loss.backward()
             optimizer.step()
             train_error += loss.detach() * count
             train_count += count
+            if on_iteration_end is not None:
+                iteration = epoch * len(train_loader) + batch
+                on_iteration_end(epoch + 1, iteration, {"train_mse": loss.item()})
 
         model.eval()
         validation_error = torch.zeros((), device=device, dtype=dtype)
@@ -84,13 +89,25 @@ def train_forward_model(model, train_dataset, validation_dataset, settings):
         history["learning_rate"].append(optimizer.param_groups[0]["lr"])
         if scheduler is not None:
             scheduler.step()
+        if on_epoch_end is not None:
+            on_epoch_end(history)
 
     return history
 
 
 
-def train_cnf_model(nf_model, forward_model, train_dataset, validation_dataset, settings):
+def train_cnf_model(
+    nf_model, train_dataset, validation_dataset, settings, *,
+    forward_model=None, on_epoch_end=None, on_iteration_end=None
+):
     
+    """Train the flow, requiring a forward model when hybrid loss is enabled.
+
+    A forward module used for reconstruction stays frozen and in eval mode after training.
+    """
+    if settings.use_hybrid_loss and forward_model is None:
+        raise ValueError("forward_model is required when use_hybrid_loss is True.")
+
     if len(train_dataset) == 0 or len(validation_dataset) == 0:
         raise ValueError("Training and validation datasets must both be nonempty.")
     if settings.epochs < 1:
@@ -102,7 +119,16 @@ def train_cnf_model(nf_model, forward_model, train_dataset, validation_dataset, 
     ):
         raise ValueError("Expected a positive step interval and a decay factor in (0, 1].")
 
+    # Freez the forward model 
 
+    freeze_forward_model = (
+            isinstance(forward_model, torch.nn.Module)
+            and settings.use_hybrid_loss
+            and settings.reconstruction_start_epoch < settings.epochs
+        )
+    if freeze_forward_model:
+        forward_model.eval()
+        forward_model.requires_grad_(False)
 
     # Model parameters, new or pretrained model
 
@@ -113,7 +139,7 @@ def train_cnf_model(nf_model, forward_model, train_dataset, validation_dataset, 
         weights = torch.load(settings.pretrained_checkpoint, map_location="cpu", weights_only=True)
         nf_model.load_state_dict(weights)
 
-    # Data Loaders and batch size   
+    # Data Loaders and batch size
 
     train_loader = DataLoader(train_dataset, batch_size=settings.batch_size, shuffle=True)
     validation_loader = DataLoader(validation_dataset, batch_size=settings.batch_size)
@@ -133,11 +159,11 @@ def train_cnf_model(nf_model, forward_model, train_dataset, validation_dataset, 
     input_sample, _ = train_dataset[0]
     input_shape = input_sample.shape
 
-    
+
     z_reconstruct = torch.randn(
     (settings.batch_size, *input_shape), device=device, dtype=dtype)
 
-    z_reconstruct_validation = torch.randn((len(validation_dataset), *input_shape), 
+    z_reconstruct_validation = torch.randn((len(validation_dataset), *input_shape),
                                           device=device, dtype=dtype)
 
     # Training
@@ -158,7 +184,7 @@ def train_cnf_model(nf_model, forward_model, train_dataset, validation_dataset, 
         train_nll = torch.zeros_like(train_error)
         train_reconstruction = torch.zeros_like(train_error)
         count_train = 0
-        for inputs, targets in train_loader:
+        for batch, (inputs, targets) in enumerate(train_loader, start=1):
             batch_size = inputs.shape[0]
             optimizer.zero_grad(set_to_none=True)
             conditions = [targets] * nf_model.NBlocks
@@ -184,6 +210,13 @@ def train_cnf_model(nf_model, forward_model, train_dataset, validation_dataset, 
             train_error += loss_train.detach() * batch_size
             train_nll += nll_loss_train.detach() * batch_size
             count_train += batch_size
+            if on_iteration_end is not None:
+                iteration = epoch * len(train_loader) + batch
+                metrics = {"train_loss": loss_train.item(), "train_nll_loss": nll_loss_train.item()}
+                if use_hybrid:
+                    metrics["train_reconstruction_loss"] = reconstruction_loss_train.item()
+                    metrics["train_hybrid_loss"] = metrics["train_loss"]
+                on_iteration_end(epoch + 1, iteration, metrics)
 
         # Validation
 
@@ -234,5 +267,7 @@ def train_cnf_model(nf_model, forward_model, train_dataset, validation_dataset, 
 
         if scheduler is not None:
             scheduler.step()
+        if on_epoch_end is not None:
+            on_epoch_end(history)
 
     return history
