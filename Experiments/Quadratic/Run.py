@@ -60,7 +60,8 @@ def run_experiment(
         )
 
         checkpoint_path = output_dir / "forward_model.pt"
-        #torch.save(forward_model.state_dict(), checkpoint_path)
+        
+        torch.save(forward_model.state_dict(), checkpoint_path)
         log.report(f"Forward model weights saved to {checkpoint_path}")
         if not live_plot:
             update_forward(forward_history)
@@ -103,7 +104,7 @@ def run_experiment(
             ),
         )
         checkpoint_path = output_dir / "cnf_model.pt"
-        #torch.save(cnf_model.state_dict(), checkpoint_path)
+        torch.save(cnf_model.state_dict(), checkpoint_path)
         log.report(f"CNF model weights saved to {checkpoint_path}")
         if not live_plot:
             update_cnf(cnf_history)

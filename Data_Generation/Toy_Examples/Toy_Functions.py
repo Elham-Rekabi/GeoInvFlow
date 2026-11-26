@@ -7,3 +7,13 @@ def quadratic_function(x1, x2):
     Accepts scalars, NumPy arrays, or PyTorch tensors .
     """
     return (x1 - 1) ** 2 + (x2 - 2) ** 2
+
+
+
+def quartic_function(x1, x2):
+
+    """Evaluate f(x1, x2) = 3(x1^2-1)^2+x2^2+0.2 x1.
+    Accepts scalars, NumPy arrays, or PyTorch tensors .
+    """
+
+    return 3 * (x1**2 - 1)**2 + x2**2 + 0.2 * x1

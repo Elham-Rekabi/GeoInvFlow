@@ -60,6 +60,7 @@ class QuadraticConfig:
     validation_samples: int = 64
 
     inverse_plot_observation: float = 1.0
+    conditional_plot_observations: tuple[float, ...] = (0.5, 1.5, 3.5)
 
     # Forward MLP with one activation per hidden layer and a linear output.
     forward_model_hidden_layers: tuple[int, ...] = (10, 20, 10)

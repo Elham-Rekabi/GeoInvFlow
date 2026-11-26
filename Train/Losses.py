@@ -33,6 +33,7 @@ def hybrid_flow_loss(nll, reconstruction, *, epsilon, weight_bounds):
 
     nll_magnitude = nll.detach().abs().clamp_min(epsilon)
     reconstruction_magnitude = reconstruction.detach().clamp_min(epsilon)
-    weight = (nll_magnitude / reconstruction_magnitude).clamp(min_weight, max_weight)
-
-    return nll + weight * reconstruction, weight
+    weight = (nll_magnitude / reconstruction_magnitude).clamp(
+        min_weight, max_weight
+    )
+    return nll  + weight * reconstruction, weight

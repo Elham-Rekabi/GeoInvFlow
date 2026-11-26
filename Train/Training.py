@@ -183,6 +183,7 @@ def train_cnf_model(
         train_error = torch.zeros((), device=device, dtype=dtype)
         train_nll = torch.zeros_like(train_error)
         train_reconstruction = torch.zeros_like(train_error)
+
         count_train = 0
         for batch, (inputs, targets) in enumerate(train_loader, start=1):
             batch_size = inputs.shape[0]
@@ -257,6 +258,7 @@ def train_cnf_model(
             train_reconstruction.item() / count_train if use_hybrid else None
         )
         history["train_hybrid_loss"].append(train_mean if use_hybrid else None)
+
         history["validation_loss"].append(validation_mean)
         history["validation_nll_loss"].append(validation_nll.item() / validation_count)
         history["validation_reconstruction_loss"].append(
