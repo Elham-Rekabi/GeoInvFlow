@@ -5,3 +5,4 @@ Geometry and physics-aware normalizing flows for structurally non-identifiable i
 
 
 ![Hybrid CNF animation for the quadratic inverse experiment](Experiments/Quadratic/outputs/hybrid/conditional_inverse.gif)
+
